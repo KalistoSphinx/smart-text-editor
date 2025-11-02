@@ -1,124 +1,35 @@
-const commonWords = [
-  "accommodate",
-  "terrified",
-  "acknowledge",
-  "achieve",
-  "acquire",
-  "address",
-  "argument",
-  "beautiful",
-  "because",
-  "beginning",
-  "believe",
-  "business",
-  "calendar",
-  "category",
-  "commitment",
-  "committee",
-  "completely",
-  "conscience",
-  "conscious",
-  "definitely",
-  "dependent",
-  "disappear",
-  "disappoint",
-  "embarrass",
-  "environment",
-  "existence",
-  "experience",
-  "familiar",
-  "finally",
-  "foreign",
-  "forty",
-  "friend",
-  "grammar",
-  "grateful",
-  "guarantee",
-  "harass",
-  "height",
-  "humorous",
-  "immediately",
-  "independent",
-  "intelligence",
-  "interrupt",
-  "knowledge",
-  "leisure",
-  "library",
-  "lightning",
-  "maintenance",
-  "marriage",
-  "minute",
-  "necessary",
-  "neighbour",
-  "noticeable",
-  "occasion",
-  "occurrence",
-  "official",
-  "parallel",
-  "parliament",
-  "particular",
-  "perform",
-  "personnel",
-  "possession",
-  "possible",
-  "preferred",
-  "principal",
-  "privilege",
-  "probably",
-  "professional",
-  "publicly",
-  "really",
-  "receive",
-  "recommend",
-  "referred",
-  "relevant",
-  "religious",
-  "remember",
-  "resistance",
-  "restaurant",
-  "rhythm",
-  "schedule",
-  "separate",
-  "sergeant",
-  "similar",
-  "successful",
-  "supersede",
-  "surprise",
-  "tomorrow",
-  "tremendous",
-  "truly",
-  "unfortunately",
-  "until",
-  "vacuum",
-  "village",
-  "weather",
-  "weird",
-  "whether",
-  "writing",
-  "yacht",
-  "yourself",
-  "across",
-  "against",
-  "although",
-  "among",
-  "algorithm",
-  "hello",
-  "free",
-  "love",
-  "amazing",
-  "amazed",
-  "going",
-  "information"
-];
+// This spell checker uses the words.txt dataset. Prefer passing a hasWord(word)
+// function (e.g., trie.contains) from the caller. If not provided, it will lazily
+// load and use /words.txt from the public folder.
 
-// Accepts optional hasWord(word) predicate to check against a larger dictionary (e.g., Trie.contains)
+let __wordsDataset = null; // Set<string> once loaded
+
+export async function loadWordsDataset(url = "/words.txt") {
+  if (__wordsDataset) return __wordsDataset;
+  const res = await fetch(url);
+  const text = await res.text();
+  __wordsDataset = new Set(
+    text
+      .split(/\r?\n/)
+      .map((w) => w.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  return __wordsDataset;
+}
+
+// Accepts optional hasWord(word) predicate to check against the dataset (e.g., Trie.contains)
 export function getCorrection(rawWord, hasWord) {
   if (!rawWord) return rawWord;
 
   const lower = rawWord.toLowerCase();
 
-  const inCommon = (w) => commonWords.includes(w);
-  const isWord = (w) => (hasWord ? !!hasWord(w) : false) || inCommon(w);
+  // Kick off dataset load in background if needed
+  if (!hasWord && !__wordsDataset && typeof fetch === "function") {
+    // Fire and forget
+    loadWordsDataset().catch(() => {});
+  }
+
+  const isWord = (w) => (hasWord ? !!hasWord(w) : __wordsDataset ? __wordsDataset.has(w) : false);
 
   // Early exit if already a known word
   if (isWord(lower)) return rawWord;
@@ -159,15 +70,13 @@ export function getCorrection(rawWord, hasWord) {
     if (isWord(c)) hits.push(c);
   });
 
-  // If we found any hits, pick the best by edit distance and commonWords preference
+  // If we found any hits, pick the best by edit distance
   if (hits.length) {
     let best = null;
     let bestScore = Infinity;
     for (const h of hits) {
       const d = levenshtein(lower, h);
-      // Prefer closer distance; tie-break by whether it's in common list
-      const bias = inCommon(h) ? 0 : 0.25; // tiny bias toward common words
-      const score = d + bias;
+      const score = d;
       if (score < bestScore) {
         bestScore = score;
         best = h;
@@ -175,18 +84,8 @@ export function getCorrection(rawWord, hasWord) {
     }
     return preserveCase(rawWord, best);
   }
-
-  // Fallback: scan commonWords by distance (small set, fast)
-  let best = lower;
-  let bestDist = 3;
-  for (const w of commonWords) {
-    const d = levenshtein(lower, w);
-    if (d < bestDist) {
-      best = w;
-      bestDist = d;
-    }
-  }
-  return bestDist <= 2 ? preserveCase(rawWord, best) : rawWord;
+  // No dictionary hits -> don't force a correction
+  return rawWord;
 }
 
 // simple Levenshtein distance

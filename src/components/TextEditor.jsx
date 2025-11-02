@@ -20,7 +20,10 @@ export default function TextEditor() {
   fetch("/words.txt")
     .then((res) => res.text())
     .then((data) => {
-      const words = data.split("\n");
+      const words = data
+        .split(/\r?\n/)
+        .map((w) => w.trim())
+        .filter(Boolean);
       words.forEach((word) => trie.insert(word));
     });
 }, [trie]);

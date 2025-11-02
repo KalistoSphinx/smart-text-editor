@@ -11,6 +11,7 @@ export class Trie {
   }
 
   insert(word) {
+    if (!word || !word.trim()) return;
     let node = this.root;
     for (const ch of word.toLowerCase()) {
       if (!node.children[ch]) node.children[ch] = new TrieNode();
