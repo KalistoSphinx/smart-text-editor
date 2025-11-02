@@ -111,9 +111,10 @@ export default function TextEditor() {
   function highlightText() {
     if (!matches.length) return escapeHtml(text);
     let out = "", last = 0;
-    matches.forEach(idx => {
+    matches.forEach((idx, i) => {
       out += escapeHtml(text.slice(last, idx));
-      out += `<mark class="match">${escapeHtml(text.slice(idx, idx + pattern.length))}</mark>`;
+      const cls = i === current ? "match current" : "match";
+      out += `<mark class="${cls}">${escapeHtml(text.slice(idx, idx + pattern.length))}</mark>`;
       last = idx + pattern.length;
     });
     out += escapeHtml(text.slice(last));
@@ -156,9 +157,9 @@ export default function TextEditor() {
             onChange={(e) => setPattern(e.target.value)}
             placeholder="Search pattern"
           />
-          <div style={{ display: "flex", gap: "4px", marginTop: "6px" }}>
-            <button onClick={() => setCurrent((c) => (matches.length ? (c - 1 + matches.length) % matches.length : -1))}>Prev</button>
-            <button onClick={() => setCurrent((c) => (matches.length ? (c + 1) % matches.length : -1))}>Next</button>
+          <div style={{ display: "flex", gap: "4px", marginTop: "6px", marginBottom: "10px" }}>
+            <button style={styles.button} onClick={() => setCurrent((c) => (matches.length ? (c - 1 + matches.length) % matches.length : -1))}>Prev</button>
+            <button style={styles.button} onClick={() => setCurrent((c) => (matches.length ? (c + 1) % matches.length : -1))}>Next</button>
           </div>
           <small style={{ color: "#777" }}>
             Matches: {matches.length} {matches.length ? `— ${current + 1}/${matches.length}` : ""}
@@ -189,19 +190,6 @@ export default function TextEditor() {
   );
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 const styles = {
   container: {
     fontFamily: "system-ui, sans-serif",
@@ -210,7 +198,8 @@ const styles = {
     padding: "20px",
     background: "#f5f7fa",       
     borderRadius: "10px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    border: "1px solid hsl(0, 0%, 80%)"
   },
   toolbar: {
     display: "flex",
@@ -290,9 +279,10 @@ const styles = {
     borderRadius: "2px"
   },
   button: {
-    padding: "6px 10px",
-    borderRadius: "5px",
-    border: "1px solid #74b9ff",
+    padding: "8px 12px",
+    borderRadius: "16px",
+    fontWeight: 600,
+    border: "none",
     background: "#0984e3",
     color: "#fff",
     cursor: "pointer",

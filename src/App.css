@@ -36,3 +36,16 @@
     transform: rotate(360deg);
   }
 }
+
+/* Highlighting for search matches in preview */
+.match {
+  background: #ffeaa7; /* subtle yellow for all matches */
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.match.current {
+  background: #0984e3; /* blue for current match */
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
